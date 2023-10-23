@@ -1,0 +1,64 @@
+{
+  "server": {
+    "zones": {
+      "defaultstatus": "0",
+      "ports": {
+        "low": "7000",
+        "high": "7010"
+      }
+    },
+    "qsdatabase": {
+      "host": "db",
+      "port": "3306",
+      "username": "MARIADBUSER",
+      "password": "MARIADBPASSWORD",
+      "db": "DBNAMEGAME"
+    },
+    "chatserver": {
+      "port": "7778",
+      "host": "HOSTADDRESS"
+    },
+    "mailserver": {
+      "host": "HOSTADDRESS",
+      "port": "7778"
+    },
+    "world": {
+      "loginserver1": {
+        "account": "",
+        "password": "",
+        "type": "0",
+        "host": "loginserver",
+        "port": "5998"
+      },
+      "tcp": {
+        "host": "HOSTADDRESS",
+        "port": "9000"
+      },
+      "telnet": {
+        "ip": "HOSTADDRESS",
+        "port": "9000",
+        "enabled": "false"
+      },
+      "key": "qwerty1234",
+      "shortname": "WORLDSERVERSHORTNAME",
+      "longname": "WORLDSERVERLONGNAME",
+      "address": "HOSTADDRESS",
+      "localaddress": "HOSTADDRESS"
+    },
+    "database": {
+      "db": "DBNAMEGAME",
+      "host": "db",
+      "port": "3306",
+      "username": "MARIADBUSER",
+      "password": "MARIADBPASSWORD"
+    },
+    "files": {
+      "opcodes": "opcodes.conf",
+      "mail_opcodes": "mail_opcodes.conf"
+    },
+    "directories": {
+      "patches": "assets/patches/",
+      "opcodes": "assets/opcodes/"
+    }
+  }
+}
