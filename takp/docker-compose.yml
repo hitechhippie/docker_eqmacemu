@@ -1,0 +1,199 @@
+---
+services:
+
+  db:
+    image: mariadb:latest
+    environment:
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/healthcheck.sh", "--connect"]
+      interval: 5s
+      timeout: 1m
+      retries: 10
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./data:/data
+
+  base:
+    build:
+      context: ./builds/base
+      args:
+        - RUN_UID=${RUN_UID}
+        - RUN_GID=${RUN_GID}
+        - RUN_UNAME=${RUN_UNAME}
+    user: ${RUN_UID}:${RUN_GID}
+    image: ${BASE_NAME}:${BASE_TAG}
+    environment:
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+      DB_NAME_GAME: ${MARIADB_DATABASE}
+      DB_NAME_LS: ${DB_NAME_LS}
+      CORES: ${CORES}
+      HOST_ADDRESS: ${HOST_ADDRESS}
+      LOCAL_NETWORK: ${LOCAL_NETWORK}
+      WORLDSERVER_SHORT_NAME: ${WORLDSERVER_SHORT_NAME}
+      WORLDSERVER_LONG_NAME: ${WORLDSERVER_LONG_NAME}
+      ALLOW_AUTO_ACCOUNT_CREATION: ${ALLOW_AUTO_ACCOUNT_CREATION}
+      ALLOW_AUTO_WORLDSERVER_REGISTRATION: ${ALLOW_AUTO_WORLDSERVER_REGISTRATION}
+    volumes:
+      - db-data:/var/lib/mysql
+      - server-base:/eqmacemu
+      - ./data:/data
+    working_dir: /eqmacemu
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["/build/init_server.sh"]
+
+  shared_memory:
+    user: ${RUN_UID}:${RUN_GID}
+    image: ${BASE_NAME}:${BASE_TAG}
+    environment:
+      LD_LIBRARY_PATH: "/eqmacemu"
+    volumes:
+      - server-base:/eqmacemu
+    working_dir: /eqmacemu
+    depends_on:
+      db:
+        condition: service_healthy
+      base:
+        condition: service_completed_successfully
+    command:
+      - /bin/sh
+      - -c
+      - |
+        cd /eqmacemu
+        /usr/bin/mkdir -p shared
+        ./shared_memory
+
+  loginserver:
+    user: ${RUN_UID}:${RUN_GID}
+    image: ${BASE_NAME}:${BASE_TAG}
+    environment:
+      LD_LIBRARY_PATH: "/eqmacemu"
+      HOST_ADDRESS: ${HOST_ADDRESS}
+    healthcheck:
+      test: ["CMD", "/usr/bin/pgrep", "loginserver"]
+      interval: 3s
+      timeout: 1m
+      retries: 10
+    volumes:
+      - server-base:/eqmacemu
+    working_dir: /eqmacemu
+    ports:
+      - "${HOST_ADDRESS}:6000:6000/udp"
+    depends_on:
+      db:
+        condition: service_healthy
+      base:
+        condition: service_completed_successfully
+      shared_memory:
+        condition: service_completed_successfully
+    command:
+      - /bin/sh
+      - -c
+      - |
+        cd /eqmacemu
+        ./loginserver
+
+  world:
+    user: ${RUN_UID}:${RUN_GID}
+    image: ${BASE_NAME}:${BASE_TAG}
+    environment:
+      LD_LIBRARY_PATH: "/eqmacemu"
+    healthcheck:
+      test: ["CMD", "/usr/bin/pgrep", "world"]
+      interval: 3s
+      timeout: 1m
+      retries: 10
+    volumes:
+      - server-base:/eqmacemu
+    working_dir: /eqmacemu
+    ports:
+      - "${HOST_ADDRESS}:9000-9001:9000-9001"
+      - "${HOST_ADDRESS}:9000-9001:9000-9001/udp"
+    depends_on:
+      db:
+        condition: service_healthy
+      loginserver:
+        condition: service_healthy
+    command:
+      - /bin/sh
+      - -c
+      - |
+        cd /eqmacemu
+        ./world
+
+  queryserv:
+    user: ${RUN_UID}:${RUN_GID}
+    image: ${BASE_NAME}:${BASE_TAG}
+    environment:
+      LD_LIBRARY_PATH: "/eqmacemu"
+    volumes:
+      - server-base:/eqmacemu
+    working_dir: /eqmacemu
+    depends_on:
+      db:
+        condition: service_healthy
+      world:
+        condition: service_healthy
+    command:
+      - /bin/sh
+      - -c
+      - |
+        cd /eqmacemu
+        ./queryserv
+
+  ucs:
+    user: ${RUN_UID}:${RUN_GID}
+    image: ${BASE_NAME}:${BASE_TAG}
+    environment:
+      LD_LIBRARY_PATH: "/eqmacemu"
+    volumes:
+      - server-base:/eqmacemu
+    working_dir: /eqmacemu
+    depends_on:
+      db:
+        condition: service_healthy
+      world:
+        condition: service_healthy
+    ports:
+      - "${HOST_ADDRESS}:7778:7778"
+    command:
+      - /bin/sh
+      - -c
+      - |
+        cd /eqmacemu
+        ./ucs
+
+  zone:
+    user: ${RUN_UID}:${RUN_GID}
+    image: ${BASE_NAME}:${BASE_TAG}
+    environment:
+      LD_LIBRARY_PATH: "/eqmacemu"
+    volumes:
+      - server-base:/eqmacemu
+    working_dir: /eqmacemu
+    depends_on:
+      db:
+        condition: service_healthy
+      world:
+        condition: service_healthy
+    ports:
+      - "${HOST_ADDRESS}:7000-7010:7000-7010/udp"
+    command:
+      - /bin/sh
+      - -c
+      - |
+        cd /eqmacemu
+        ./zonelaunch.sh 
+
+volumes:
+  server-base:
+  server-shared_memory:
+  db-data:
