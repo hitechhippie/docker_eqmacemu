@@ -20,6 +20,7 @@ else
   echo "[database] load loginserver tables..."
   mariadb --user root --password=${MARIADB_ROOT_PASSWORD} -h db -D ${DB_NAME_LS} < /data/login_tables_2023-10-25-19\:31.sql
   mariadb --user root --password=${MARIADB_ROOT_PASSWORD} -h db -D ${DB_NAME_LS} < /data/tblloginserversettings.sql
+  mariadb --user root --password=${MARIADB_ROOT_PASSWORD} -h db -D ${DB_NAME_GAME} < /data/2023_10_15_character_data_fatigue.sql
   mariadb --user root --password=${MARIADB_ROOT_PASSWORD} -h db -D ${DB_NAME_LS} -e "ALTER TABLE tblLoginServerAccounts ALTER creationIP SET DEFAULT '127.0.0.1';"
   mariadb --user root --password=${MARIADB_ROOT_PASSWORD} -h db -D ${DB_NAME_LS} -e "ALTER TABLE tblLoginServerAccounts ALTER ForumName SET DEFAULT 'docker';"
   echo "[database] setting up initial dockeradmin login account, dockeradmin:dockeradmin"
